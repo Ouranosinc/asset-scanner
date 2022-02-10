@@ -256,7 +256,7 @@ class RabbitMQInputPlugin(BaseInputPlugin):
 
             channel.queue_declare(queue=queue["name"], **declare_kwargs)
             channel.queue_bind(
-                exchange=dest_exchange["name"], queue=queue["name"], **bind_kwargs
+                exchange=dest_exchange["exchange"], queue=queue["name"], **bind_kwargs
             )
 
             # Set callback

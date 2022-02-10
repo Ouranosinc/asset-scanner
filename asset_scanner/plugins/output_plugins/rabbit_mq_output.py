@@ -95,7 +95,11 @@ Configuration for the header options for rabbit.
       - Description
     * - x-delay
       - int
-      - `DEFAULT: 3000` Message delay in milliseconds use in kwargs passed to `pika.spec.Basicproperties.headers <https://pika.readthedocs.io/en/stable/modules/spec.html?highlight=headers#pika.spec.BasicProperties>`_
+      - `DEFAULT: 30000` `Message delay <https://github.com/rabbitmq/rabbitmq-delayed-message-exchange>`_ in milliseconds use in kwargs passed to `pika.spec.Basicproperties.headers <https://pika.readthedocs.io/en/stable/modules/spec.html?highlight=headers#pika.spec.BasicProperties>`_
+    * - x-cache-ttl
+      - int
+      - `DEFAULT: 30000` `Message ttl <https://github.com/noxdafox/rabbitmq-message-deduplication>`_ in milliseconds use in kwargs passed to `pika.spec.Basicproperties.headers <https://pika.readthedocs.io/en/stable/modules/spec.html?highlight=headers#pika.spec.BasicProperties>`_
+
 
 Example Configuration:
 
@@ -188,8 +192,9 @@ class RabbitMQOutBackend(OutputBackend):
         if kwargs.get("deduplicate", False):
             header["x-delay"] = self.header_conf.get("x-delay", 30000)
             header["x-deduplication-header"] = kwargs.get("id")
+            header["x-cache-ttl"] = self.header_conf.get("x-cache-ttl", 30000)
 
-        # Possbile dict merge header with header_conf here.
+        # Possible dict merge header with header_conf here.
         return pika.BasicProperties(headers=header)
 
     def export(self, data: Dict, **kwargs):
@@ -205,7 +210,7 @@ class RabbitMQOutBackend(OutputBackend):
         msg = json.dumps(data)
 
         self.channel.basic_publish(
-            exchange=self.dest_exchange["name"],
+            exchange=self.dest_exchange["exchange"],
             body=msg,
             routing_key=self.exchange_conf.get("routing_key", ""),
             properties=message_properties,

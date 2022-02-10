@@ -58,10 +58,10 @@ The source and dest exchange keys are **kwarg splattered into `pika.channel.Chan
       - ``REQUIRED`` `Exchange type <https://medium.com/trendyol-tech/rabbitmq-exchange-types-d7e1f51ec825>`_
 
 
-queues
+message
 ^^^^^^
 
-List of queue objects. Each queue object comprises:
+Configuration options for the basic_publish:
 
 .. list-table::
     :header-rows: 1
@@ -69,18 +69,9 @@ List of queue objects. Each queue object comprises:
     * - Option
       - Value Type
       - Description
-    * - name
+    * - routing_key
       - string
-      - ``REQUIRED`` Queue name
-    * - kwargs
-      - dict
-      - kwargs passed to `pika.channel.queue_declare <https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.queue_declare>`_
-    * - bind_kwargs
-      - dict
-      - kwargs passed to `pika.channel.queue_bind <https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.queue_bind>`_
-    * - consume_kwargs
-      - dict
-      - kwargs passed to `pika.channel.Channel.basic_consume <https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.basic_consume>`_
+      - Routing key for the message
 
 header_conf
 ^^^^^^^^^^^
@@ -121,14 +112,8 @@ Example Configuration:
                 destination_exchange:
                     exchange: mydest-exchange
                     exchange_type: fanout
-              queues:
-                - name:
-                  kwargs:
-                    durable: true
-                  bind_kwargs:
-                    routing_key: my.routing.key
-                  consume_kwargs:
-                    auto_ack: false
+              message:
+                routing_key: items
               header_conf:
                 x_delay: 30000
 """
@@ -149,6 +134,7 @@ class RabbitMQOutBackend(OutputBackend):
         self.exchange_conf = kwargs.get("exchange", {})
         self.queues_conf = kwargs.get("queues", {})
         self.header_conf = kwargs.get("header_conf", {})
+        self.message_conf = kwargs.get("message", {})
 
         # Get the username and password for rabbit
         rabbit_user = self.connection_conf.get("user")
@@ -212,6 +198,6 @@ class RabbitMQOutBackend(OutputBackend):
         self.channel.basic_publish(
             exchange=self.dest_exchange["exchange"],
             body=msg,
-            routing_key=self.exchange_conf.get("routing_key", ""),
+            routing_key=self.message_conf.get("routing_key", ""),
             properties=message_properties,
         )

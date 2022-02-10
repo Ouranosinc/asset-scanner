@@ -45,7 +45,7 @@ TODO: Make the callback more flexible (open to collaboration)
 exchange
 ^^^^^^^^
 
-The source and dest exchange keys comprise:
+The source and dest exchange keys are **kwarg splattered into `pika.channel.Channel.exchange_declare <https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.exchange_declare>`_:
 
 .. list-table::
     :header-rows: 1
@@ -53,10 +53,10 @@ The source and dest exchange keys comprise:
     * - Option
       - Value Type
       - Description
-    * - name
+    * - exchange
       - string
       - ``REQUIRED`` Exchange name
-    * - type
+    * - exchange_type
       - string
       - ``REQUIRED`` `Exchange type <https://medium.com/trendyol-tech/rabbitmq-exchange-types-d7e1f51ec825>`_
 
@@ -99,11 +99,11 @@ Example Configuration:
                     heartbeat: 300
               exchange:
                 source_exchange:
-                    name: mysource-exchange
-                    type: fanout
+                    exchange: mysource-exchange
+                    exchange_type: fanout
                 destination_exchange:
-                    name: mydest-exchange
-                    type: fanout
+                    exchange: mydest-exchange
+                    exchange_type: fanout
               queues:
                 - name:
                   kwargs:
@@ -238,17 +238,14 @@ class RabbitMQInputPlugin(BaseInputPlugin):
 
         # Declare relevant exchanges
         if src_exchange:
-            channel.exchange_declare(
-                exchange=src_exchange["name"], exchange_type=src_exchange["type"]
-            )
-        channel.exchange_declare(
-            exchange=dest_exchange["name"], exchange_type=dest_exchange["type"]
-        )
+            channel.exchange_declare(**src_exchange)
+
+        channel.exchange_declare(**dest_exchange)
 
         # Bind source exchange to dest exchange
         if src_exchange:
             channel.exchange_bind(
-                destination=dest_exchange["name"], source=src_exchange["name"]
+                destination=dest_exchange["exchange"], source=src_exchange["exchange"]
             )
 
         # Declare queue and bind queue to the dest exchange

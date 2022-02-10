@@ -42,7 +42,7 @@ Uses a `RabbitMQ Queue <https://www.rabbitmq.com/>`_ as a destination for file o
 exchange
 ^^^^^^^^
 
-The source and dest exchange keys comprise:
+The source and dest exchange keys are **kwarg splattered into `pika.channel.Channel.exchange_declare <https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.exchange_declare>`_:
 
 .. list-table::
     :header-rows: 1
@@ -50,12 +50,13 @@ The source and dest exchange keys comprise:
     * - Option
       - Value Type
       - Description
-    * - name
+    * - exchange
       - string
       - ``REQUIRED`` Exchange name
-    * - type
+    * - exchange_type
       - string
       - ``REQUIRED`` `Exchange type <https://medium.com/trendyol-tech/rabbitmq-exchange-types-d7e1f51ec825>`_
+
 
 queues
 ^^^^^^
@@ -94,7 +95,7 @@ Configuration for the header options for rabbit.
       - Description
     * - x-delay
       - int
-      - Message delay in milliseconds use in kwargs passed to `pika.spec.Basicproperties.headers <https://pika.readthedocs.io/en/stable/modules/spec.html?highlight=headers#pika.spec.BasicProperties>`_
+      - `DEFAULT: 3000` Message delay in milliseconds use in kwargs passed to `pika.spec.Basicproperties.headers <https://pika.readthedocs.io/en/stable/modules/spec.html?highlight=headers#pika.spec.BasicProperties>`_
 
 Example Configuration:
 
@@ -111,11 +112,11 @@ Example Configuration:
                     heartbeat: 300
               exchange:
                 source_exchange:
-                    name: mysource-exchange
-                    type: fanout
+                    exchange: mysource-exchange
+                    exchange_type: fanout
                 destination_exchange:
-                    name: mydest-exchange
-                    type: fanout
+                    exchange: mydest-exchange
+                    exchange_type: fanout
               queues:
                 - name:
                   kwargs:
@@ -171,17 +172,14 @@ class RabbitMQOutBackend(OutputBackend):
         self.dest_exchange = self.exchange_conf.get("destination_exchange")
 
         # Create a new channel
+        channel = connection.channel()
+
         if self.dest_exchange:
-            channel = connection.channel()
-            channel.exchange_declare(
-                exchange=self.dest_exchange["name"],
-                exchange_type=self.dest_exchange["type"],
-            )
+            channel.exchange_declare(**self.dest_exchange)
+
         if self.src_exchange:
-            channel.exchange_declare(
-                exchange=self.src_exchange["name"],
-                exchange_type=self.src_exchange["type"],
-            )
+            channel.exchange_declare(**self.src_exchange)
+
         self.channel = channel
 
     def build_header(self, **kwargs):

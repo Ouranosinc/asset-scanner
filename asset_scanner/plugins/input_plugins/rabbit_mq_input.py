@@ -235,6 +235,7 @@ class RabbitMQInputPlugin(BaseInputPlugin):
 
         # Create a new channel
         channel = connection.channel()
+        channel.basic_qos(prefetch_count=1)
 
         # Declare relevant exchanges
         if src_exchange:
